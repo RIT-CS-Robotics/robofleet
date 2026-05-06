@@ -3,9 +3,10 @@ Code that runs on the fleet robots
 
 To use this repo, it must be on a laptop with:
 * ROS Jazzy with nav2
-* RosAria2
-* Pioneer P3DX drivers
+* [RosAria2](https://github.com/joaocandre/rosaria2)
+* Potentially separate lidar drivers
 and attached to one of our robots.
+See INSTALL.md for detailed installation instructions
 
 Other repos in the overall project are:
 * robofleet-server for the server that displays robot status and allows people to upload code
