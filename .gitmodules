@@ -1,3 +1,6 @@
 [submodule "rosaria2"]
 	path = rosaria2
 	url = https://github.com/RIT-CS-Robotics/rosaria2
+[submodule "p3dx"]
+	path = p3dx
+	url = https://github.com/RIT-CS-Robotics/p3dx
