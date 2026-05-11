@@ -1,0 +1,3 @@
+[submodule "rosaria2"]
+	path = rosaria2
+	url = https://github.com/RIT-CS-Robotics/rosaria2

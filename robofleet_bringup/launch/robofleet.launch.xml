@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <!-- robot control -->
+  <node pkg="rosaria2" exec="rosaria2_debug" name="rosaria">
+    <!-- make topics match what nav2 expects -->
+    <!-- <remap from="/pose" to="/odom" /> -->
+    <!-- <remap from="/cmd_vel" to="/RosAria/cmd_vel" /> -->
+  </node>
+  <!-- to be replaced with whatever lidar driver -->
+  <include file="$(find-pkg-share urg_node2)/launch/urg_node2.launch.py" />
+  <node pkg="tf2_ros" exec="static_transform_publisher" args="0.16 0 0.28 0 0 0 base_link laser" />
+  <!-- Nav2 core 
+  <include file="$(find-pkg-share nav2_bringup)/launch/navigation_launch.py" /> -->
+</launch>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <include file="$(find-pkg-share robofleet_bringup)/launch/robofleet.launch.xml" />
+  <include file="$(find-pkg-share slam_toolbox)/launch/online_async_launch.py" />
+</launch>
