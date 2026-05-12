@@ -1,0 +1,2 @@
+With golisano3hi.png, center of lab is ~(1235,2245) @ 0.0388 m/pix
+For simplicity, (48,87) meters from bottom left corner of map
