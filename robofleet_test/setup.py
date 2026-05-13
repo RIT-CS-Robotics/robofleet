@@ -25,7 +25,8 @@ setup(
     entry_points={
         'console_scripts': [
             'init = robofleet_test.init:main',
-            'drive = robofleet_test.drive:main'
+            'drive = robofleet_test.drive:main',
+            'scantest = robofleet_test.scantest:main'
         ],
     },
 )

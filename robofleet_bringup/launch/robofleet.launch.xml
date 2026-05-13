@@ -8,7 +8,10 @@
   </node>
   <!-- to be replaced with whatever lidar driver -->
   <include file="$(find-pkg-share urg_node2)/launch/urg_node2.launch.py" />
-  <node pkg="tf2_ros" exec="static_transform_publisher" args="0.16 0 0.28 0 0 0 base_link laser" />
   <!-- Nav2 core 
-  <include file="$(find-pkg-share nav2_bringup)/launch/navigation_launch.py" /> -->
+  <include file="$(find-pkg-share p3dx_navigation)/launch/slam_2d_demo.launch.py">
+    <arg name="use_sim_time" value="False" />
+  </include>
+  -->  
+  <node pkg="tf2_ros" exec="static_transform_publisher" args="0.14 0 0.33 0 0 0 base_link laser" />
 </launch>
