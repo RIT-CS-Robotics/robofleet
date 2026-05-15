@@ -1,9 +1,11 @@
+import math
 import rclpy
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 from geometry_msgs.msg import PoseStamped
 from nav2_simple_commander.robot_navigator import BasicNavigator
+from tf_transformations import quaternion_from_euler
 
 MAP_IMAGE = 'golisano3hi.png'
 
@@ -13,6 +15,7 @@ ORIGIN_X = 0.0
 ORIGIN_Y = 0.0
 
 clicked_points = []
+current_point = None
 navigation_started = False
 
 image = mpimg.imread(MAP_IMAGE)
@@ -30,8 +33,7 @@ navigator.waitUntilNav2Active()
 print("Nav2 Active")
 
 def onclick(event):
-
-    global clicked_points
+    global current_point
 
     if navigation_started:
         return
@@ -42,7 +44,7 @@ def onclick(event):
     px = event.xdata
     py = event.ydata
 
-    clicked_points.append((px, py))
+    current_point = [px, py, 0.0, 0.0]
 
     idx = len(clicked_points)
 
@@ -59,6 +61,24 @@ def onclick(event):
     )
 
     fig.canvas.draw()
+
+def onrelease(event):
+    global current_point
+    global clicked_points
+
+    if current_point is None:
+        return
+
+    if event.xdata is None or event.ydata is None:
+        return
+
+    dx = event.xdata
+    dy = event.ydata
+
+    current_point[2] = dx
+    current_point[3] = dy
+
+    clicked_points.append((current_point[0], current_point[1], current_point[2], current_point[3]))
 
 def onkey(event):
 
@@ -77,7 +97,7 @@ def onkey(event):
 
         goals = []
 
-        for px, py in clicked_points:
+        for px, py, dx, dy in clicked_points:
 
             map_x = px * RESOLUTION + ORIGIN_X
 
@@ -103,14 +123,29 @@ def onkey(event):
 
             goal.pose.position.x = map_x
             goal.pose.position.y = map_y
+            
+            diff_x = dx-px
+            diff_y = dy-py
+            if abs(diff_x) < 1e-6 and abs(diff_y) < 1e-6:
+                angle = 0.0
+            else:
+                angle = math.atan2(diff_y, diff_x)
+            # angle = math.atan2(diff_y, diff_x)
 
-            goal.pose.orientation.w = 1.0
+            qx, qy, qz, qw = quaternion_from_euler(0, 0, angle)
+
+            goal.pose.orientation.x = qx
+            goal.pose.orientation.y = qy
+            goal.pose.orientation.z = qz
+            goal.pose.orientation.w = qw
 
             goals.append(goal)
 
         navigator.followWaypoints(goals)
 
     elif event.key == 'c':
+        global current_point
+        current_point = None
         clicked_points.clear()
         ax.clear()
         ax.imshow(image)
@@ -125,6 +160,11 @@ ax.imshow(image)
 fig.canvas.mpl_connect(
     'button_press_event',
     onclick
+)
+
+fig.canvas.mpl_connect(
+    'button_release_event',
+    onrelease
 )
 
 fig.canvas.mpl_connect(
