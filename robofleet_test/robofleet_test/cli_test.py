@@ -29,27 +29,20 @@ class Point:
         return self.name
 
     def __repr__(self):
-        return (f"{self.name} \t\t {self.x:.2f} {self.y:.2f}")
+        return f"{self.name} \t\t {self.x:.2f} {self.y:.2f}"
 
 
 class PointDataset:
-
     def __init__(self, path):
-
         self.points = []
-
         self.lookup = {}
-
         self.load_points(path)
 
     def load_points(self, path):
-
         with open(path) as F:
-
             F.readline()
 
             for line in F:
-
                 x, y, name = line.split()
 
                 coords = (
@@ -57,27 +50,20 @@ class PointDataset:
                     int(y)
                 )
 
-                point = Point(
-                    coords,
-                    name
-                )
+                point = Point(coords, name)
 
                 self.lookup[name] = point
-
                 self.points.append(point)
 
     def get_coords(self, print_points=True):
-
         coords = []
 
         for point in self.points:
-
             x, y = point.get_coords()
 
             coords.append([int(x), int(y)])
 
             if print_points:
-
                 print(
                     f"{point.get_name()} : "
                     f"{point.get_coords()}"
@@ -86,42 +72,19 @@ class PointDataset:
         return coords
 
     def apply_homography(self, H):
+        coords = self.get_coords(print_points=False)
 
-        coords = self.get_coords(
-            print_points=False
-        )
-
-        coords = np.asarray(
-            coords,
-            dtype=np.float32
-        )
-
+        coords = np.asarray(coords, dtype=np.float32)
         coords = coords.reshape(-1, 1, 2)
 
-        transformed_coords = (
-            cv.perspectiveTransform(
-                coords,
-                H
-            )
-        )
+        transformed_coords = cv.perspectiveTransform(coords, H)
 
-        for tc, point in zip(
-            transformed_coords,
-            self.points
-        ):
-
+        for tc, point in zip(transformed_coords, self.points):
             point.set_coords(tc[0])
 
     def pixel_to_map(self, px, py):
-
-        image_height = cv.imread(
-            MAP_IMAGE
-        ).shape[0]
-
-        map_x = (
-            px * RESOLUTION
-            + ORIGIN_X
-        )
+        image_height = cv.imread(MAP_IMAGE).shape[0]
+        map_x = px * RESOLUTION + ORIGIN_X
 
         map_y = (
             (image_height - py)
@@ -132,20 +95,68 @@ class PointDataset:
         return map_x, map_y
 
     def print_real_world_coords(self):
-
         for point in self.points:
-
             px, py = point.get_coords()
 
-            map_x, map_y = (
-                self.pixel_to_map(px, py)
-            )
+            map_x, map_y = self.pixel_to_map(px, py)
 
             print(
                 f"{point.get_name()} | "
                 f"pixel=({px:.2f}, {py:.2f}) | "
                 f"map=({map_x:.2f}, {map_y:.2f})"
             )
+
+
+def show_selected_points_on_map(selected_points):
+    image = cv.imread(MAP_IMAGE)
+
+    if image is None:
+        print("Could not load map image")
+        return
+
+    for name, px, py in selected_points:
+        px = int(round(px))
+        py = int(round(py))
+
+        cv.circle(
+            image,
+            (px, py),
+            radius=12,
+            color=(0, 0, 255),
+            thickness=-1
+        )
+
+        cv.circle(
+            image,
+            (px, py),
+            radius=14,
+            color=(255, 255, 255),
+            thickness=2
+        )
+
+        cv.putText(
+            image,
+            name,
+            (px + 18, py - 18),
+            cv.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (0, 0, 255),
+            2
+        )
+
+    cv.namedWindow("Selected Waypoints", cv.WINDOW_NORMAL)
+
+    cv.setWindowProperty(
+        "Selected Waypoints",
+        cv.WND_PROP_TOPMOST,
+        1
+    )
+
+    cv.imshow("Selected Waypoints", image)
+
+    print("\nShowing selected waypoint map.")
+
+    cv.waitKey(1)
 
 
 src_pts = np.array([
@@ -192,16 +203,12 @@ dst_pts = np.array([
     [1718.8, 1447.8]
 ], dtype=np.float32)
 
-H, status = cv.findHomography(
-    src_pts,
-    dst_pts
-)
+H, status = cv.findHomography(src_pts, dst_pts)
 
 
 class NavigatorController:
 
     def __init__(self):
-
         rclpy.init()
 
         self.navigator = BasicNavigator()
@@ -213,43 +220,36 @@ class NavigatorController:
         print("Nav2 Active")
 
     def create_goal(self, x, y):
-
         goal = PoseStamped()
 
         goal.header.frame_id = "map"
 
         goal.header.stamp = (
-            self.navigator.get_clock()
+            self.navigator
+            .get_clock()
             .now()
             .to_msg()
         )
 
         goal.pose.position.x = float(x)
-
         goal.pose.position.y = float(y)
-
         goal.pose.orientation.w = 1.0
 
         return goal
 
     def follow_waypoints(self, goals):
-
-        self.navigator.followWaypoints(
-            goals
-        )
+        self.navigator.followWaypoints(goals)
 
     def wait_until_complete(self):
-
         while not self.navigator.isTaskComplete():
-
             rclpy.spin_once(
                 self.navigator,
                 timeout_sec=0.1
             )
 
-        result = (
-            self.navigator.getResult()
-        )
+            cv.waitKey(1)
+
+        result = self.navigator.getResult()
 
         print(
             f"\nNavigation Result: "
@@ -257,55 +257,47 @@ class NavigatorController:
         )
 
     def shutdown(self):
-
         rclpy.shutdown()
 
 
 def main():
-
     pd = PointDataset("points.txt")
 
     pd.apply_homography(H)
 
     print("\nAvailable Locations:\n")
-
     pd.print_real_world_coords()
 
     requested_locations = sys.argv[1:]
 
     if len(requested_locations) == 0:
-
         print(
             "\nUsage:\n"
             "python3 main.py Office3509 Office3511"
         )
-
         return
 
-    navigator_controller = (
-        NavigatorController()
-    )
+    navigator_controller = NavigatorController()
 
     goals = []
+    selected_points = []
 
     for name in requested_locations:
 
         if name not in pd.lookup:
-
             print(
                 f"\nNo location named "
                 f"{name}"
             )
-
             continue
 
         point = pd.lookup[name]
 
         px, py = point.get_coords()
 
-        map_x, map_y = (
-            pd.pixel_to_map(px, py)
-        )
+        selected_points.append((name, px, py))
+
+        map_x, map_y = pd.pixel_to_map(px, py)
 
         print(
             f"\n{name}"
@@ -313,35 +305,30 @@ def main():
             f"\nmap    = ({map_x:.2f}, {map_y:.2f})"
         )
 
-        goal = (
-            navigator_controller
-            .create_goal(
-                map_x,
-                map_y
-            )
+        goal = navigator_controller.create_goal(
+            map_x,
+            map_y
         )
 
         goals.append(goal)
 
     if len(goals) == 0:
-
         print("\nNo valid goals")
-
         navigator_controller.shutdown()
-
         return
+
+    show_selected_points_on_map(selected_points)
 
     print("\nSending Waypoints...\n")
 
-    navigator_controller.follow_waypoints(
-        goals
-    )
+    navigator_controller.follow_waypoints(goals)
 
     navigator_controller.wait_until_complete()
 
     navigator_controller.shutdown()
 
+    cv.destroyAllWindows()
+
 
 if __name__ == "__main__":
-
     main()
