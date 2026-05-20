@@ -95,7 +95,7 @@ class GuiListener(Node):
 
 def ros_to_pixel(ros_x, ros_y):
     pixel_x = (ros_x - origin_x) / resolution
-    pixel_y = height - ((ros_y - origin_y) / resolution)
+    pixel_y = (ros_y - origin_y) / resolution
     return pixel_x, pixel_y
 
 
@@ -173,19 +173,26 @@ view = graph_widget.addViewBox()
 view.setAspectLocked(True)
 
 img_item = pg.ImageItem(img)
+img_item.setRect(QtCore.QRectF(0, 0, width, height))
+
 view.addItem(img_item)
 
-bot_marker = QtWidgets.QGraphicsEllipseItem(-5, -5, 10, 10)
-bot_marker.setPen(pg.mkPen("r", width=0))
-bot_marker.setBrush(pg.mkBrush(255, 0, 0, 120))
+view.invertY(True)
+
+bot_marker = pg.ScatterPlotItem(
+    size=14,
+    brush=pg.mkBrush(255, 0, 0, 180),
+    pen=pg.mkPen(None)
+)
+
+goal_marker = pg.ScatterPlotItem(
+    size=14,
+    brush=pg.mkBrush(0, 255, 0, 180),
+    pen=pg.mkPen("g", width=2)
+)
+
 view.addItem(bot_marker)
-
-goal_marker = QtWidgets.QGraphicsEllipseItem(-7, -7, 14, 14)
-goal_marker.setPen(pg.mkPen("g", width=2))
-goal_marker.setBrush(pg.mkBrush(0, 255, 0, 120))
-goal_marker.setVisible(False)
 view.addItem(goal_marker)
-
 
 def update_map_view(bot_px=None, bot_py=None):
     if full_size_checkbox.isChecked():
@@ -223,8 +230,7 @@ def update_gui():
         tf_status_label.setText("TF Status: map → base_link received")
 
         bot_px, bot_py = ros_to_pixel(ros_node.bot_x, ros_node.bot_y)
-        bot_marker.setPos(bot_px, bot_py)
-        bot_marker.setVisible(True)
+        bot_marker.setData([bot_px], [bot_py])
 
         bot_position_label.setText(
             f"Bot TF Position in map frame:\n"
@@ -240,8 +246,7 @@ def update_gui():
 
     if ros_node.goal_x is not None and ros_node.goal_y is not None:
         goal_px, goal_py = ros_to_pixel(ros_node.goal_x, ros_node.goal_y)
-        goal_marker.setPos(goal_px, goal_py)
-        goal_marker.setVisible(True)
+        goal_marker.setData([goal_px], [goal_py])
 
         goal_position_label.setText(
             f"Goal Position:\n"
